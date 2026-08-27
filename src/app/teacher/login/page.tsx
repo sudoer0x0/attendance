@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
@@ -134,9 +135,9 @@ export default function TeacherLoginPage() {
 
         <p className="mt-5 text-center text-[12.5px] text-[var(--color-ink-subtle)]">
           Student?{" "}
-          <a href="/student/login" className="font-medium text-[var(--color-accent)] hover:underline">
+          <Link href="/student/login" className="font-medium text-[var(--color-accent)] hover:underline">
             Sign in to Student Portal
-          </a>
+          </Link>
         </p>
       </div>
     </div>

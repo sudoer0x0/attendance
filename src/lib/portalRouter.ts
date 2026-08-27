@@ -1,34 +1,54 @@
 "use client";
 
-import { useRouter as useNextRouter } from "next/navigation";
+import { usePathname, useRouter as useNextRouter } from "next/navigation";
 
-export function toPortalPath(path: string): string {
-  if (typeof window === "undefined") return path;
-  const currentFirstSegment = window.location.pathname.split("/")[1] || "";
-  if (!currentFirstSegment) return path;
+/**
+ * Returns the active root segment from the pathname (e.g. "superadmin-portal-44z", "admin-portal-99x", "staff-portal-55k", "student").
+ */
+export function getPortalBase(pathname?: string): string {
+  if (pathname) {
+    return pathname.split("/")[1] || "";
+  }
+  if (typeof window !== "undefined") {
+    return window.location.pathname.split("/")[1] || "";
+  }
+  return "";
+}
 
-  if (path.startsWith("/teacher/") || path === "/teacher") {
-    return path.replace(/^\/teacher/, `/${currentFirstSegment}`);
-  }
-  if (path.startsWith("/admin/") || path === "/admin") {
-    return path.replace(/^\/admin/, `/${currentFirstSegment}`);
-  }
+/**
+ * Converts generic internal paths like /superadmin/settings, /admin/students, /teacher/courses
+ * into their corresponding secret or mounted portal URL based on the current window or pathname.
+ */
+export function toPortalPath(path: string, currentPathname?: string): string {
+  const firstSegment = getPortalBase(currentPathname);
+  if (!firstSegment) return path;
+
+  // Mask /superadmin routes with active secret prefix
   if (path.startsWith("/superadmin/") || path === "/superadmin") {
-    return path.replace(/^\/superadmin/, `/${currentFirstSegment}`);
+    return path.replace(/^\/superadmin/, `/${firstSegment}`);
+  }
+  // Mask /admin routes with active secret prefix
+  if (path.startsWith("/admin/") || path === "/admin") {
+    return path.replace(/^\/admin/, `/${firstSegment}`);
+  }
+  // Mask /teacher routes with active secret prefix
+  if (path.startsWith("/teacher/") || path === "/teacher") {
+    return path.replace(/^\/teacher/, `/${firstSegment}`);
   }
   return path;
 }
 
 export function usePortalRouter() {
   const router = useNextRouter();
+  const pathname = usePathname();
 
   return {
     ...router,
-    push: (url: string, options?: any) => {
-      router.push(toPortalPath(url), options);
+    push: (url: string, options?: Parameters<typeof router.push>[1]) => {
+      router.push(toPortalPath(url, pathname), options);
     },
-    replace: (url: string, options?: any) => {
-      router.replace(toPortalPath(url), options);
+    replace: (url: string, options?: Parameters<typeof router.replace>[1]) => {
+      router.replace(toPortalPath(url, pathname), options);
     },
   };
 }

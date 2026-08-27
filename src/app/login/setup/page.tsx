@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toPortalPath } from "@/lib/portalRouter";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
@@ -71,7 +72,8 @@ function StaffSetupForm() {
         return;
       }
       push("Account set up.", "success");
-      router.push(data.portalUrl ?? (data.role === "DEPARTMENT_ADMIN" ? "/admin/students" : "/teacher/courses"));
+      const fallbackUrl = toPortalPath(data.role === "DEPARTMENT_ADMIN" ? "/admin/students" : "/teacher/courses");
+      router.push(data.portalUrl ?? fallbackUrl);
     } catch {
       setError("Something went wrong. Try again.");
     } finally {

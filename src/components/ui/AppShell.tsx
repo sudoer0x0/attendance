@@ -1,8 +1,11 @@
 "use client";
 
 import { ReactNode, useState } from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { useCurrentProfile } from "@/lib/auth/useCurrentProfile";
+import { toPortalPath } from "@/lib/portalRouter";
 
 interface NavItem {
   label: string;
@@ -24,20 +27,11 @@ export function AppShell({
 }) {
   const { profile } = useCurrentProfile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const currentFirstSegment = typeof window !== "undefined" ? window.location.pathname.split("/")[1] : "";
+  const pathname = usePathname();
+  const currentFirstSegment = pathname ? pathname.split("/")[1] || "" : "";
 
   function resolveHref(href: string) {
-    if (!currentFirstSegment) return href;
-    if (href.startsWith("/superadmin/") || href === "/superadmin") {
-      return href.replace(/^\/superadmin/, `/${currentFirstSegment}`);
-    }
-    if (href.startsWith("/admin/") || href === "/admin") {
-      return href.replace(/^\/admin/, `/${currentFirstSegment}`);
-    }
-    if (href.startsWith("/teacher/") || href === "/teacher") {
-      return href.replace(/^\/teacher/, `/${currentFirstSegment}`);
-    }
-    return href;
+    return toPortalPath(href, pathname);
   }
 
   async function handleSignOut() {
@@ -86,21 +80,26 @@ export function AppShell({
         <nav className="flex-1 space-y-0.5 px-2.5 py-3">
           {navItems.map((item) => {
             const finalHref = resolveHref(item.href);
+            const isActive =
+              item.active !== undefined
+                ? item.active
+                : pathname === finalHref || (finalHref !== `/${currentFirstSegment}` && pathname?.startsWith(finalHref));
+
             return (
-              <a
+              <Link
                 key={item.href}
                 href={finalHref}
                 className={cn(
                   "flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-[13.5px] font-medium transition-colors duration-100",
-                  item.active
+                  isActive
                     ? "bg-[var(--color-accent-subtle)] text-[var(--color-accent-ink)]"
                     : "text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-ink)]"
                 )}
-                aria-current={item.active ? "page" : undefined}
+                aria-current={isActive ? "page" : undefined}
               >
                 {item.icon}
                 {item.label}
-              </a>
+              </Link>
             );
           })}
         </nav>
@@ -165,21 +164,26 @@ export function AppShell({
             <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
               {navItems.map((item) => {
                 const finalHref = resolveHref(item.href);
+                const isActive =
+                  item.active !== undefined
+                    ? item.active
+                    : pathname === finalHref || (finalHref !== `/${currentFirstSegment}` && pathname?.startsWith(finalHref));
+
                 return (
-                  <a
+                  <Link
                     key={item.href}
                     href={finalHref}
                     onClick={() => setMobileMenuOpen(false)}
                     className={cn(
                       "flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-[14px] font-medium transition-colors",
-                      item.active
+                      isActive
                         ? "bg-[var(--color-accent-subtle)] text-[var(--color-accent-ink)] font-semibold"
                         : "text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-ink)]"
                     )}
                   >
                     {item.icon}
                     {item.label}
-                  </a>
+                  </Link>
                 );
               })}
             </nav>
@@ -260,25 +264,30 @@ export function AppShell({
           <nav className="fixed bottom-0 left-0 right-0 z-30 flex h-14 items-center justify-around border-t border-[var(--color-border)] bg-white/95 px-2 backdrop-blur-md md:hidden shadow-lg">
             {navItems.map((item) => {
               const finalHref = resolveHref(item.href);
+              const isActive =
+                item.active !== undefined
+                  ? item.active
+                  : pathname === finalHref || (finalHref !== `/${currentFirstSegment}` && pathname?.startsWith(finalHref));
+
               return (
-                <a
+                <Link
                   key={item.href}
                   href={finalHref}
                   className={cn(
                     "flex flex-1 flex-col items-center justify-center py-1 text-center transition-colors",
-                    item.active
+                    isActive
                       ? "text-[var(--color-accent-ink)] font-bold"
                       : "text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
                   )}
-                  aria-current={item.active ? "page" : undefined}
+                  aria-current={isActive ? "page" : undefined}
                 >
                   <span className="text-[11px] leading-tight truncate max-w-[80px]">
                     {item.label}
                   </span>
-                  {item.active && (
+                  {isActive && (
                     <span className="mt-0.5 h-1 w-4 rounded-full bg-[var(--color-accent)]" />
                   )}
-                </a>
+                </Link>
               );
             })}
           </nav>

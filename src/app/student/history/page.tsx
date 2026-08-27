@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { format } from "date-fns";
 import { EmptyState } from "@/components/ui/Table";
 import { apiFetch } from "@/lib/apiFetch";
@@ -27,16 +28,16 @@ export default function HistoryPage() {
     <div className="min-h-dvh bg-[var(--color-surface-subtle)]">
       <header className="flex items-center justify-between border-b border-[var(--color-border)] bg-white px-4 py-3.5">
         <div className="flex items-center gap-3">
-          <a href="/student/dashboard" className="text-[13px] font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
+          <Link href="/student/dashboard" className="text-[13px] font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
             &larr; Dashboard
-          </a>
+          </Link>
           <span className="font-[var(--font-display)] text-[15px] font-bold text-[var(--color-ink)]">
             Attendance history
           </span>
         </div>
-        <a href="/student/dashboard" className="text-[13px] font-medium text-[var(--color-accent)]">
+        <Link href="/student/dashboard" className="text-[13px] font-medium text-[var(--color-accent)]">
           Scan QR
-        </a>
+        </Link>
       </header>
 
       <div className="mx-auto max-w-lg px-4 py-4">
