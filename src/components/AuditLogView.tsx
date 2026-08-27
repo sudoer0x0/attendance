@@ -25,9 +25,7 @@ const roleTone: Record<string, "accent" | "warning" | "neutral" | "success"> = {
   SYSTEM: "neutral",
 };
 
-/** Turns "teacher.credentials_reset" into "Teacher credentials reset" —
- *  good enough for a readable log without a hand-maintained label map for
- *  every action string the app writes. */
+/** Turns "teacher.credentials_reset" into "Teacher credentials reset" */
 function humanizeAction(action: string): string {
   const [, verb] = action.split(".");
   return (verb ?? action).replace(/_/g, " ");
@@ -70,7 +68,7 @@ export function AuditLogView() {
   }
 
   if (entries === null) {
-    return <p className="py-10 text-center text-[13px] text-[var(--color-ink-subtle)]">Loading...</p>;
+    return <p className="py-10 text-center text-[13px] text-[var(--color-ink-subtle)]">Loading audit records...</p>;
   }
 
   if (entries.length === 0) {
@@ -83,40 +81,78 @@ export function AuditLogView() {
 
   return (
     <div className="flex flex-col gap-3 px-4 pb-8 md:px-6">
-      <Table>
-        <TableHead>
-          <TableRow>
-            <Th>When</Th>
-            <Th>Actor</Th>
-            <Th>Action</Th>
-            <Th>Target</Th>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {entries.map((e) => (
-            <TableRow key={e.id}>
-              <Td className="whitespace-nowrap text-[var(--color-ink-muted)]">
-                {format(new Date(e.createdAt), "d MMM, h:mm:ss a")}
-              </Td>
-              <Td>
-                <div className="flex items-center gap-2">
-                  <Badge tone={roleTone[e.actorRole] ?? "neutral"}>
-                    {e.actorRole === "TEACHER" ? "STAFF" : e.actorRole.replace("_", " ")}
-                  </Badge>
-                  <span className="text-[var(--color-ink-muted)]">{e.actorLabel}</span>
-                </div>
-              </Td>
-              <Td className="font-medium">{humanizeAction(e.action)}</Td>
-              <Td className="font-[var(--font-mono)] text-[12px] text-[var(--color-ink-subtle)]">
-                {e.targetType ? `${e.targetType}${e.targetId ? ` · ${e.targetId.slice(0, 10)}…` : ""}` : "—"}
-              </Td>
+      {/* Mobile Card Feed (shown on < md screens) */}
+      <div className="flex flex-col gap-2 md:hidden">
+        {entries.map((e) => (
+          <div
+            key={e.id}
+            className="flex flex-col gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white p-3.5 shadow-xs"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <Badge tone={roleTone[e.actorRole] ?? "neutral"}>
+                {e.actorRole === "TEACHER" ? "STAFF" : e.actorRole.replace("_", " ")}
+              </Badge>
+              <span className="text-[11.5px] text-[var(--color-ink-subtle)]">
+                {format(new Date(e.createdAt), "d MMM, h:mm a")}
+              </span>
+            </div>
+
+            <div className="mt-0.5">
+              <p className="text-[13.5px] font-semibold text-[var(--color-ink)] capitalize">
+                {humanizeAction(e.action)}
+              </p>
+              <p className="text-[12px] text-[var(--color-ink-subtle)]">
+                By: <span className="font-medium text-[var(--color-ink)]">{e.actorLabel}</span>
+              </p>
+            </div>
+
+            {e.targetType && (
+              <div className="mt-1 border-t border-[var(--color-border)]/60 pt-1.5 font-[var(--font-mono)] text-[11px] text-[var(--color-ink-subtle)]">
+                Target: {e.targetType} {e.targetId ? `· ${e.targetId.slice(0, 8)}…` : ""}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table (hidden on < md screens) */}
+      <div className="hidden md:block">
+        <Table>
+          <TableHead>
+            <TableRow>
+              <Th>When</Th>
+              <Th>Actor</Th>
+              <Th>Action</Th>
+              <Th>Target</Th>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {entries.map((e) => (
+              <TableRow key={e.id}>
+                <Td className="whitespace-nowrap text-[var(--color-ink-muted)]">
+                  {format(new Date(e.createdAt), "d MMM, h:mm:ss a")}
+                </Td>
+                <Td>
+                  <div className="flex items-center gap-2">
+                    <Badge tone={roleTone[e.actorRole] ?? "neutral"}>
+                      {e.actorRole === "TEACHER" ? "STAFF" : e.actorRole.replace("_", " ")}
+                    </Badge>
+                    <span className="text-[var(--color-ink-muted)]">{e.actorLabel}</span>
+                  </div>
+                </Td>
+                <Td className="font-medium">{humanizeAction(e.action)}</Td>
+                <Td className="font-[var(--font-mono)] text-[12px] text-[var(--color-ink-subtle)]">
+                  {e.targetType ? `${e.targetType}${e.targetId ? ` · ${e.targetId.slice(0, 10)}…` : ""}` : "—"}
+                </Td>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
       {cursor && (
-        <div className="flex justify-center">
-          <Button variant="secondary" onClick={loadMore} loading={loadingMore}>
+        <div className="mt-2 flex justify-center">
+          <Button variant="secondary" onClick={loadMore} loading={loadingMore} className="w-full sm:w-auto">
             Load more
           </Button>
         </div>

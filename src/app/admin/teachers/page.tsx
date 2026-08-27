@@ -104,55 +104,113 @@ export default function TeachersPage() {
             action={<Button onClick={() => setCreateOpen(true)}>Add staff</Button>}
           />
         ) : (
-          <Table>
-            <TableHead>
-              <TableRow>
-                <Th>Name</Th>
-                <Th>Email</Th>
-                <Th>Courses</Th>
-                <Th>Status</Th>
-                <Th />
-              </TableRow>
-            </TableHead>
-            <TableBody>
+          <>
+            {/* Mobile Card Feed (shown on < md screens) */}
+            <div className="flex flex-col gap-3 md:hidden">
               {teachers.map((t) => (
-                <TableRow key={t.id}>
-                  <Td className="font-medium">{t.fullName}</Td>
-                  <Td className="text-[var(--color-ink-muted)]">{t.email}</Td>
-                  <Td>{t._count.courses}</Td>
-                  <Td>
-                    {!t.active ? (
-                      <Badge tone="danger">Deactivated</Badge>
-                    ) : t.mustChangePassword ? (
-                      <Badge tone="warning">Setup pending</Badge>
-                    ) : (
-                      <Badge tone="success" dot>
-                        Active
-                      </Badge>
-                    )}
-                  </Td>
-                  <Td className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => unlockStaff(t)} title="Clear 15-minute login lockout">
-                        Clear Lockout
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setResetTarget(t)}>
-                        Reset
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleActive(t)}
-                        className={t.active ? "text-[var(--color-danger)]" : ""}
-                      >
-                        {t.active ? "Deactivate" : "Reactivate"}
-                      </Button>
+                <div
+                  key={t.id}
+                  className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 shadow-xs"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-[var(--font-display)] text-[15px] font-bold text-[var(--color-ink)]">
+                        {t.fullName}
+                      </p>
+                      <p className="text-[12.5px] text-[var(--color-ink-muted)] break-all">{t.email}</p>
                     </div>
-                  </Td>
-                </TableRow>
+                    <div>
+                      {!t.active ? (
+                        <Badge tone="danger">Deactivated</Badge>
+                      ) : t.mustChangePassword ? (
+                        <Badge tone="warning">Setup pending</Badge>
+                      ) : (
+                        <Badge tone="success" dot>
+                          Active
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-[var(--color-border)]/60 pt-2 text-[12.5px]">
+                    <span className="text-[var(--color-ink-subtle)]">
+                      {t._count.courses} {t._count.courses === 1 ? "course" : "courses"} assigned
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-1.5 border-t border-[var(--color-border)]/60 pt-2.5">
+                    <Button variant="secondary" size="sm" onClick={() => unlockStaff(t)} title="Clear 15-minute login lockout" className="flex-1 text-[12px]">
+                      Clear Lockout
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={() => setResetTarget(t)} className="flex-1 text-[12px]">
+                      Reset
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleActive(t)}
+                      className={`text-[12px] ${t.active ? "text-[var(--color-danger)]" : ""}`}
+                    >
+                      {t.active ? "Deactivate" : "Reactivate"}
+                    </Button>
+                  </div>
+                </div>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+
+            {/* Desktop Table (hidden on < md screens) */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <Th>Name</Th>
+                    <Th>Email</Th>
+                    <Th>Courses</Th>
+                    <Th>Status</Th>
+                    <Th />
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {teachers.map((t) => (
+                    <TableRow key={t.id}>
+                      <Td className="font-medium">{t.fullName}</Td>
+                      <Td className="text-[var(--color-ink-muted)]">{t.email}</Td>
+                      <Td>{t._count.courses}</Td>
+                      <Td>
+                        {!t.active ? (
+                          <Badge tone="danger">Deactivated</Badge>
+                        ) : t.mustChangePassword ? (
+                          <Badge tone="warning">Setup pending</Badge>
+                        ) : (
+                          <Badge tone="success" dot>
+                            Active
+                          </Badge>
+                        )}
+                      </Td>
+                      <Td className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => unlockStaff(t)} title="Clear 15-minute login lockout">
+                            Clear Lockout
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => setResetTarget(t)}>
+                            Reset
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleActive(t)}
+                            className={t.active ? "text-[var(--color-danger)]" : ""}
+                          >
+                            {t.active ? "Deactivate" : "Reactivate"}
+                          </Button>
+                        </div>
+                      </Td>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </div>
 

@@ -89,17 +89,18 @@ export default function StudentsPage() {
         }
       />
 
-      <div className="flex flex-wrap items-center gap-2 px-4 py-3 md:px-6">
-        <Input
-          placeholder="Search by name or matric no."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-64"
-        />
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 px-4 py-3 md:px-6">
+        <div className="w-full sm:w-64">
+          <Input
+            placeholder="Search by name or matric no."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
         <select
           value={levelFilter}
           onChange={(e) => setLevelFilter(e.target.value)}
-          className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-white px-3 text-sm text-[var(--color-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30"
+          className="h-9 w-full sm:w-auto rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-white px-3 text-sm text-[var(--color-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30"
         >
           <option value="">All levels</option>
           {levels.map((l) => (
@@ -120,41 +121,77 @@ export default function StudentsPage() {
             action={<Button onClick={() => setImportOpen(true)}>Import Excel</Button>}
           />
         ) : (
-          <Table>
-            <TableHead>
-              <TableRow>
-                <Th>Name</Th>
-                <Th>Matric No.</Th>
-                <Th>Level</Th>
-                <Th />
-              </TableRow>
-            </TableHead>
-            <TableBody>
+          <>
+            {/* Mobile Card Feed (shown on < md screens) */}
+            <div className="flex flex-col gap-2.5 md:hidden">
               {students.map((s) => (
-                <TableRow key={s.id}>
-                  <Td className="font-medium">
-                    {s.surname}, {s.firstName}
-                  </Td>
-                  <Td className="font-[var(--font-mono)] text-[12.5px] text-[var(--color-ink-muted)]">
-                    {s.matricNo}
-                  </Td>
-                  <Td>
-                    <Badge>{s.level.name}</Badge>
-                  </Td>
-                  <Td className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => setEditTarget(s)}>
-                        Edit
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(s.id)} className="text-[var(--color-danger)]">
-                        Remove
-                      </Button>
+                <div
+                  key={s.id}
+                  className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white p-3.5 shadow-xs"
+                >
+                  <div className="min-w-0 flex-1 pr-2">
+                    <p className="truncate font-semibold text-[14px] text-[var(--color-ink)]">
+                      {s.surname}, {s.firstName}
+                    </p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="font-[var(--font-mono)] text-[12px] text-[var(--color-ink-muted)]">
+                        {s.matricNo}
+                      </span>
+                      <Badge>{s.level.name}</Badge>
                     </div>
-                  </Td>
-                </TableRow>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button variant="secondary" size="sm" onClick={() => setEditTarget(s)}>
+                      Edit
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(s.id)} className="text-[var(--color-danger)]">
+                      Remove
+                    </Button>
+                  </div>
+                </div>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+
+            {/* Desktop Table (hidden on < md screens) */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <Th>Name</Th>
+                    <Th>Matric No.</Th>
+                    <Th>Level</Th>
+                    <Th />
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {students.map((s) => (
+                    <TableRow key={s.id}>
+                      <Td className="font-medium">
+                        {s.surname}, {s.firstName}
+                      </Td>
+                      <Td className="font-[var(--font-mono)] text-[12.5px] text-[var(--color-ink-muted)]">
+                        {s.matricNo}
+                      </Td>
+                      <Td>
+                        <Badge>{s.level.name}</Badge>
+                      </Td>
+                      <Td className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => setEditTarget(s)}>
+                            Edit
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(s.id)} className="text-[var(--color-danger)]">
+                            Remove
+                          </Button>
+                        </div>
+                      </Td>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </div>
 

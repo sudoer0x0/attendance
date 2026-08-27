@@ -217,7 +217,7 @@ export default function DepartmentsPage() {
                   )}
                 </CardBody>
 
-                <div className="flex items-center justify-between border-t border-[var(--color-border)] px-4 py-3 bg-[var(--color-surface-subtle)]/50">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--color-border)] px-4 py-3 bg-[var(--color-surface-subtle)]/50">
                   <Button variant="secondary" size="sm" onClick={() => setSelectedDept(d)}>
                     Manage roster &amp; staff &rarr;
                   </Button>

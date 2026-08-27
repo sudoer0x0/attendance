@@ -54,8 +54,8 @@ export default function HistoryPage() {
                 key={r.id}
                 className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white px-3.5 py-3"
               >
-                <div>
-                  <p className="text-[13.5px] font-medium text-[var(--color-ink)]">
+                <div className="min-w-0 flex-1 pr-2">
+                  <p className="text-[13.5px] font-medium text-[var(--color-ink)] break-words">
                     {r.courseCode} — {r.courseName}
                   </p>
                   <p className="text-[12.5px] text-[var(--color-ink-subtle)]">
