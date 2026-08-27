@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a" />
+      <stop offset="50%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+    <linearGradient id="checkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="125%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Background Card -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+
+  <!-- Outer QR Locator Brackets Motif -->
+  <path d="M 120 180 L 120 130 A 10 10 0 0 1 130 120 L 180 120" stroke="white" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" opacity="0.4" />
+  <path d="M 332 120 L 382 120 A 10 10 0 0 1 392 130 L 392 180" stroke="white" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" opacity="0.4" />
+  <path d="M 120 332 L 120 382 A 10 10 0 0 0 130 392 L 180 392" stroke="white" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" opacity="0.4" />
+  <path d="M 392 332 L 392 382 A 10 10 0 0 1 382 392 L 332 392" stroke="white" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" opacity="0.4" />
+
+  <!-- Center "A" / Shield Attendance Monogram -->
+  <g filter="url(#shadow)">
+    <!-- Stylized "A" structure -->
+    <path d="M 256 140 L 160 360 L 210 360 L 232 305 L 280 305 L 302 360 L 352 360 Z M 256 230 L 241 270 L 271 270 Z" fill="white" />
+    
+    <!-- Verified Checkmark Badge -->
+    <circle cx="355" cy="355" r="70" fill="url(#checkGrad)" stroke="#1e3a8a" stroke-width="12" />
+    <path d="M 325 355 L 348 378 L 388 332" stroke="white" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  </g>
+</svg>

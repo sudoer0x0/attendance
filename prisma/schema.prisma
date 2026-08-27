@@ -1,0 +1,254 @@
+// Attendance System — Database Schema
+// See HANDOFF.md for the full design rationale behind every non-obvious field.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// System-wide configuration (single row) — makes rotation interval,
+// cooldown duration, etc. tunable by the Super Admin without a redeploy.
+// See HANDOFF.md "Design decisions" for why this is a single-row table.
+// ─────────────────────────────────────────────────────────────
+model SystemConfig {
+  id                        String   @id @default("singleton")
+  schoolName                String
+  schoolLogoUrl             String?
+  qrRotationSeconds         Int      @default(5)
+  studentLoginCooldownHours Int      @default(2)
+  loginMaxAttempts          Int      @default(5)
+  loginLockoutMinutes       Int      @default(15)
+  updatedAt                 DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// Roles — kept as separate models (not one polymorphic User table)
+// deliberately: each role has meaningfully different fields (DOB +
+// matric for students, department scoping for staff, none for super
+// admin) and different auth rules. See HANDOFF.md for the tradeoff.
+// ─────────────────────────────────────────────────────────────
+
+model SuperAdmin {
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  passwordHash       String
+  totpSecretEncrypted String?  // null until first-login TOTP enrollment is completed
+  totpEnrolledAt     DateTime?
+  backupCodesHashed  String[]  @default([]) // hashed, single-use, see auth/backup-codes.ts
+  tokenVersion       Int       @default(0)  // bump = instant global logout (kill switch)
+  recoveryCodesHashed String[] @default([]) // shown once at setup script time, see scripts/setup.ts
+  createdAt          DateTime  @default(now())
+  lastLoginAt        DateTime?
+
+  auditLogs          AuditLog[]
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique // short code, e.g. "CSC"
+  createdAt DateTime @default(now())
+  deletedAt DateTime? // soft delete — see AuditLog / recycle bin pattern in HANDOFF.md
+
+  admins    DepartmentAdmin[]
+  teachers  Teacher[]
+  levels    Level[]
+  students  Student[]
+}
+
+model DepartmentAdmin {
+  id                   String    @id @default(cuid())
+  email                String    @unique
+  fullName             String
+  passwordHash         String
+  mustChangePassword   Boolean   @default(true) // true until first-login reset is completed
+  totpSecretEncrypted  String?
+  totpEnrolledAt       DateTime?
+  backupCodesHashed    String[]  @default([])
+  tokenVersion         Int       @default(0)
+  active               Boolean   @default(true) // deactivation kill-switch, see HANDOFF.md §Auth
+  createdAt            DateTime  @default(now())
+  lastLoginAt          DateTime?
+
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  auditLogs AuditLog[]
+
+  @@index([departmentId])
+}
+
+model Teacher {
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  fullName            String
+  passwordHash        String
+  mustChangePassword  Boolean   @default(true)
+  totpSecretEncrypted String?
+  totpEnrolledAt      DateTime?
+  backupCodesHashed   String[]  @default([])
+  tokenVersion        Int       @default(0)
+  active              Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  lastLoginAt         DateTime?
+
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  courses   Course[]
+  auditLogs AuditLog[]
+
+  @@index([departmentId])
+}
+
+// Departments manage their own set of levels (100/200/... or any scheme) —
+// not a hardcoded enum. See HANDOFF.md and design doc §6.
+model Level {
+  id           String @id @default(cuid())
+  name         String // e.g. "100", "ND1" — free text by design
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  students     Student[]
+
+  @@unique([departmentId, name])
+}
+
+model Student {
+  id           String    @id @default(cuid())
+  matricNo     String    @unique
+  surname      String
+  firstName    String
+  middleName   String?
+  dateOfBirth  DateTime  // used ONLY for first-login password-setup verification, never regular login
+  passwordHash String?   // null until first-login password creation is completed
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  deletedAt    DateTime? // soft delete — recycle bin, see HANDOFF.md
+
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  levelId      String
+  level        Level      @relation(fields: [levelId], references: [id])
+
+  // --- Security state (see design doc §4) ---
+  passwordSetupAttempts Int       @default(0) // rate-limits first-login DOB guessing
+  passwordSetupLockedAt DateTime?
+  tokenVersion          Int       @default(0) // kill switch
+  lastLogoutAt          DateTime? // start of the 2h re-login cooldown
+  lastLoginAt           DateTime?
+  currentDeviceId        String?  // WebAuthn credential ID currently bound to this student
+  currentDevicePublicKey String?  // WebAuthn public key, base64
+  currentDeviceCounter   Int?     // WebAuthn signature counter, replay protection
+  currentDeviceBoundAt   DateTime?
+
+  attendances Attendance[]
+  auditLogs   AuditLog[]
+
+  @@index([departmentId, levelId])
+  @@index([levelId])
+}
+
+model Course {
+  id           String   @id @default(cuid())
+  code         String   // e.g. "CSC301"
+  name         String
+  createdAt    DateTime @default(now())
+  archivedAt   DateTime?
+
+  teacherId String
+  teacher   Teacher @relation(fields: [teacherId], references: [id])
+
+  sessions Session[]
+
+  @@unique([teacherId, code])
+}
+
+enum SessionStatus {
+  ACTIVE
+  ENDED
+}
+
+model Session {
+  id          String        @id @default(cuid())
+  date        DateTime      @default(now())
+  startedAt   DateTime      @default(now())
+  endedAt     DateTime?
+  status      SessionStatus @default(ACTIVE)
+  qrSecret    String        // random 256-bit secret, server-side only, never sent to client — see lib/qr
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id])
+
+  attendances Attendance[]
+
+  @@index([courseId, date])
+}
+
+enum AttendanceMethod {
+  QR
+  MANUAL
+}
+
+model Attendance {
+  id        String            @id @default(cuid())
+  method    AttendanceMethod
+  timestamp DateTime          @default(now())
+  deviceId  String? // WebAuthn credential ID used for this scan, for audit purposes
+  ipAddress String?
+  manualReason String? // required when method = MANUAL, see design doc §5
+
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id])
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id])
+
+  @@unique([sessionId, studentId]) // a student can only be marked once per session, no matter how many scans
+  @@index([sessionId])
+  @@index([studentId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Append-only audit log. Never updated or deleted by application code —
+// see HANDOFF.md "Security model" for why this is enforced at the DB
+// level too (a REVOKE UPDATE/DELETE migration), not just by convention.
+// ─────────────────────────────────────────────────────────────
+enum ActorRole {
+  SUPER_ADMIN
+  DEPARTMENT_ADMIN
+  TEACHER
+  STUDENT
+  SYSTEM
+}
+
+model AuditLog {
+  id        String    @id @default(cuid())
+  actorRole ActorRole
+  action    String    // e.g. "student.deleted", "teacher.totp_reset", "session.created"
+  targetType String?  // e.g. "Student", "Teacher"
+  targetId   String?
+  metadata   Json?    // before/after values for revertible edits, see recycle-bin pattern
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  superAdminId      String?
+  superAdmin        SuperAdmin?      @relation(fields: [superAdminId], references: [id])
+  departmentAdminId String?
+  departmentAdmin   DepartmentAdmin? @relation(fields: [departmentAdminId], references: [id])
+  teacherId         String?
+  teacher           Teacher?         @relation(fields: [teacherId], references: [id])
+  studentId         String?
+  student           Student?         @relation(fields: [studentId], references: [id])
+
+  @@index([createdAt])
+  @@index([targetType, targetId])
+  @@index([superAdminId])
+  @@index([departmentAdminId])
+  @@index([teacherId])
+  @@index([studentId])
+}

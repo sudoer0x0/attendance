@@ -1,0 +1,12 @@
+{
+  "name": "Attend",
+  "short_name": "Attend",
+  "description": "Secure attendance for your institution.",
+  "start_url": "/student/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2952cc",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

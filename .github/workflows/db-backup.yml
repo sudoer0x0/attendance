@@ -1,0 +1,34 @@
+name: Daily DB Backup
+
+on:
+  schedule:
+    - cron: "0 2 * * *" # 2am UTC daily
+  workflow_dispatch: {} # allows manual trigger from the Actions tab
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install postgresql-client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Dump database
+        run: |
+          pg_dump "${{ secrets.SUPABASE_DB_URL }}" --no-owner --no-acl | gzip > backup-$(date +%F).sql.gz
+        # SUPABASE_DB_URL should be the Session Pooler connection string
+        # (not the direct connection) — see HANDOFF.md, same IPv4
+        # reasoning as the app's own DATABASE_URL.
+
+      - name: Upload to Cloudflare R2
+        run: |
+          aws s3 cp backup-$(date +%F).sql.gz "s3://${{ secrets.R2_BUCKET }}/" \
+            --endpoint-url "${{ secrets.R2_ENDPOINT }}"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_KEY }}
+          AWS_DEFAULT_REGION: auto
+
+      - name: Verify upload
+        run: |
+          aws s3 ls "s3://${{ secrets.R2_BUCKET }}/backup-$(date +%F).sql.gz" \
+            --endpoint-url "${{ secrets.R2_ENDPOINT }}"
