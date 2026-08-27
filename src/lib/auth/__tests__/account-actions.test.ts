@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const dbMock = {
-  teacher: { update: vi.fn() },
-  departmentAdmin: { update: vi.fn() },
+  teacher: { update: vi.fn(), findUnique: vi.fn() },
+  departmentAdmin: { update: vi.fn(), findUnique: vi.fn() },
 };
 vi.mock("@/lib/db", () => ({ db: dbMock }));
+vi.mock("@/lib/redis", () => ({ redis: { del: vi.fn().mockResolvedValue(1) } }));
 
 const {
   setTeacherActive,
@@ -15,6 +16,8 @@ const {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  dbMock.teacher.findUnique.mockResolvedValue({ id: "t1", email: "test@example.com" });
+  dbMock.departmentAdmin.findUnique.mockResolvedValue({ id: "d1", email: "admin@example.com" });
   dbMock.teacher.update.mockResolvedValue({});
   dbMock.departmentAdmin.update.mockResolvedValue({});
 });

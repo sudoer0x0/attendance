@@ -37,7 +37,36 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { token, expiresAt } = computeCurrentToken(session.id, session.qrSecret);
     const checkedInCount = await db.attendance.count({ where: { sessionId: session.id } });
 
-    return NextResponse.json({ token, expiresAt, checkedInCount });
+    const recent = await db.attendance.findMany({
+      where: { sessionId: session.id },
+      take: 8,
+      orderBy: { timestamp: "desc" },
+      include: {
+        student: {
+          select: {
+            matricNo: true,
+            surname: true,
+            firstName: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({
+      token,
+      expiresAt,
+      checkedInCount,
+      courseCode: session.course.code,
+      courseName: session.course.name,
+      startedAt: session.startedAt,
+      recentAttendances: recent.map((r) => ({
+        id: r.id,
+        matricNo: r.student.matricNo,
+        name: `${r.student.surname}, ${r.student.firstName}`,
+        timestamp: r.timestamp,
+        method: r.method,
+      })),
+    });
   } catch (err) {
     if (err instanceof UnauthorizedError) return NextResponse.json({ error: err.message }, { status: 401 });
     if (err instanceof ForbiddenError) return NextResponse.json({ error: err.message }, { status: 403 });

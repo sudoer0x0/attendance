@@ -125,8 +125,15 @@ export async function POST(req: NextRequest) {
     await sendNewDeviceLoginAlert(email, account.role, ip, new Date());
   }
 
+  const portalUrl =
+    account.role === "SUPER_ADMIN"
+      ? `/${process.env.SUPER_ADMIN_SECRET_PATH || "superadmin"}/departments`
+      : account.role === "DEPARTMENT_ADMIN"
+      ? `/${process.env.DEPT_ADMIN_SECRET_PATH || "admin"}/students`
+      : `/${process.env.STAFF_SECRET_PATH || "staff"}/courses`;
+
   return withSessionCookies(
-    NextResponse.json({ role: account.role, departmentId: account.departmentId ?? null }),
+    NextResponse.json({ role: account.role, departmentId: account.departmentId ?? null, portalUrl }),
     accessToken,
     refreshToken
   );

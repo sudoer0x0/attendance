@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
 export default function AdminIndexPage() {
-  redirect("/admin/students");
+  const deptAdminSecret = process.env.DEPT_ADMIN_SECRET_PATH || "admin";
+  redirect(`/${deptAdminSecret}/students`);
 }

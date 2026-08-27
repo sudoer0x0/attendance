@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
 export default function SuperAdminIndexPage() {
-  redirect("/superadmin/departments");
+  const superAdminSecret = process.env.SUPER_ADMIN_SECRET_PATH || "superadmin";
+  redirect(`/${superAdminSecret}/departments`);
 }

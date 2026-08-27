@@ -71,7 +71,7 @@ function StaffSetupForm() {
         return;
       }
       push("Account set up.", "success");
-      router.push(data.role === "DEPARTMENT_ADMIN" ? "/admin/students" : "/teacher/courses");
+      router.push(data.portalUrl ?? (data.role === "DEPARTMENT_ADMIN" ? "/admin/students" : "/teacher/courses"));
     } catch {
       setError("Something went wrong. Try again.");
     } finally {

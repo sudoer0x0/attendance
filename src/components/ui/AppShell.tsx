@@ -40,6 +40,22 @@ export function AppShell({
     return href;
   }
 
+  async function handleSignOut() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      const loginUrl =
+        profile?.role === "SUPER_ADMIN"
+          ? `/${currentFirstSegment || "superadmin"}/login`
+          : profile?.role === "DEPARTMENT_ADMIN"
+          ? `/${currentFirstSegment || "admin"}/login`
+          : profile?.role === "TEACHER"
+          ? `/${currentFirstSegment || "staff"}/login`
+          : "/student/login";
+      window.location.href = loginUrl;
+    }
+  }
+
   const displayOrg = profile?.departmentName ?? orgLabel;
   const displayRoleSubtitle =
     profile?.role === "SUPER_ADMIN"
@@ -89,13 +105,27 @@ export function AppShell({
           })}
         </nav>
 
-        <div className="border-t border-[var(--color-border)] px-4 py-3">
-          <p className="truncate text-[12.5px] font-medium text-[var(--color-ink)]">
-            {profile?.displayName ?? userLabel ?? "Authenticated User"}
-          </p>
-          {profile?.email && (
-            <p className="truncate text-[11.5px] text-[var(--color-ink-subtle)]">{profile.email}</p>
-          )}
+        <div className="flex items-center justify-between border-t border-[var(--color-border)] px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[12.5px] font-medium text-[var(--color-ink)]">
+              {profile?.displayName ?? userLabel ?? "Authenticated User"}
+            </p>
+            {profile?.email && (
+              <p className="truncate text-[11.5px] text-[var(--color-ink-subtle)]">{profile.email}</p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="ml-2 rounded p-1 text-[var(--color-ink-subtle)] hover:bg-[var(--color-surface-subtle)] hover:text-[var(--color-danger)]"
+            title="Sign out"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </button>
         </div>
       </aside>
 
@@ -112,6 +142,18 @@ export function AppShell({
               </span>
             )}
           </div>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="rounded p-1 text-[var(--color-ink-subtle)] hover:text-[var(--color-danger)]"
+            title="Sign out"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </button>
         </header>
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>

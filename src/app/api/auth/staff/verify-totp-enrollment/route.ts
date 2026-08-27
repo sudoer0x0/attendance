@@ -78,8 +78,13 @@ export async function POST(req: NextRequest) {
   const accessToken = await signAccessToken(claims);
   const refreshToken = await signRefreshToken(claims);
 
+  const portalUrl =
+    role === "DEPARTMENT_ADMIN"
+      ? `/${process.env.DEPT_ADMIN_SECRET_PATH || "admin"}/students`
+      : `/${process.env.STAFF_SECRET_PATH || "staff"}/courses`;
+
   return withSessionCookies(
-    NextResponse.json({ ok: true, role, departmentId: departmentId ?? null }),
+    NextResponse.json({ ok: true, role, departmentId: departmentId ?? null, portalUrl }),
     accessToken,
     refreshToken
   );

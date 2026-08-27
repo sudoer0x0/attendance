@@ -72,6 +72,20 @@ export default function TeachersPage() {
     }
   }
 
+  async function unlockStaff(teacher: Teacher) {
+    const res = await apiFetch("/api/auth/unlock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ teacherId: teacher.id }),
+    });
+    if (res.ok) {
+      push(`Login lockout cleared for ${teacher.fullName}.`, "success");
+    } else {
+      const data = await res.json();
+      push(data.error ?? "Could not clear lockout.", "danger");
+    }
+  }
+
   return (
     <AppShell navItems={navItems} orgLabel="Attend" userLabel="Department Admin">
       <PageHeader
@@ -119,8 +133,11 @@ export default function TeachersPage() {
                   </Td>
                   <Td className="text-right">
                     <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => unlockStaff(t)} title="Clear 15-minute login lockout">
+                        Clear Lockout
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => setResetTarget(t)}>
-                        Reset credentials
+                        Reset
                       </Button>
                       <Button
                         variant="ghost"

@@ -474,6 +474,20 @@ function DepartmentDetailsModal({
     }
   }
 
+  async function unlockStaff(s: StaffSummary) {
+    const res = await apiFetch("/api/auth/unlock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ teacherId: s.id }),
+    });
+    if (res.ok) {
+      push(`Login lockout cleared for ${s.fullName}.`, "success");
+    } else {
+      const data = await res.json();
+      push(data.error ?? "Could not clear lockout.", "danger");
+    }
+  }
+
   async function handleDeleteLevel(id: string) {
     const res = await apiFetch(`/api/levels/${id}`, { method: "DELETE" });
     if (res.ok) {
@@ -660,6 +674,9 @@ function DepartmentDetailsModal({
                           </Td>
                           <Td className="text-right">
                             <div className="flex justify-end gap-1">
+                              <Button variant="ghost" size="sm" onClick={() => unlockStaff(t)} title="Clear 15-minute login lockout">
+                                Clear Lockout
+                              </Button>
                               <Button variant="ghost" size="sm" onClick={() => setResetStaffTarget(t)}>
                                 Reset
                               </Button>

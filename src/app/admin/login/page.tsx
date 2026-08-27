@@ -51,7 +51,7 @@ export default function DepartmentAdminLoginPage() {
 
       push("Signed in.", "success");
       const basePath = typeof window !== "undefined" ? window.location.pathname.split("/")[1] : "admin";
-      router.push(`/${basePath}/students`);
+      router.push(data.portalUrl ?? `/${basePath}/students`);
     } catch {
       setError("Couldn't reach the server. Check your connection and try again.");
     } finally {

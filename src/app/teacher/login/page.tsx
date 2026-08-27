@@ -51,7 +51,7 @@ export default function TeacherLoginPage() {
 
       push("Signed in as Staff.", "success");
       const basePath = typeof window !== "undefined" ? window.location.pathname.split("/")[1] : "staff";
-      router.push(`/${basePath}/courses`);
+      router.push(data.portalUrl ?? `/${basePath}/courses`);
     } catch {
       setError("Couldn't reach the server. Check your connection and try again.");
     } finally {

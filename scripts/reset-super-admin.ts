@@ -11,6 +11,7 @@ import { createInterface } from "readline/promises";
 import { db } from "../src/lib/db";
 import { hashPassword, generateBackupCode } from "../src/lib/auth/password";
 import { generateTotpSecret, getTotpEnrollmentUri } from "../src/lib/auth/totp";
+import { redis } from "../src/lib/redis";
 import argon2 from "argon2";
 
 async function main() {
@@ -68,7 +69,13 @@ async function main() {
     },
   });
 
-  console.log("\n✅ Password has been successfully reset! All prior sessions have been revoked.\n");
+  try {
+    await redis.del(`login_attempts:${admin.email.toLowerCase()}`);
+  } catch {
+    // Redis cleanup best-effort
+  }
+
+  console.log("\n✅ Password has been successfully reset! All prior sessions and login lockouts have been revoked.\n");
 
   if (shouldResetTotp && totpSecret) {
     const uri = getTotpEnrollmentUri(totpSecret, admin.email, "Attend");

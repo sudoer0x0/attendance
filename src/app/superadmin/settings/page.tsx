@@ -27,11 +27,35 @@ export default function SettingsPage() {
   const { push } = useToast();
   const [config, setConfig] = useState<SystemConfig | null>(null);
   const [saving, setSaving] = useState(false);
+  const [unlockTarget, setUnlockTarget] = useState("");
+  const [unlocking, setUnlocking] = useState(false);
 
   const load = useCallback(async () => {
     const res = await apiFetch("/api/system-config");
     if (res.ok) setConfig(await res.json());
   }, []);
+
+  async function handleClearLockout() {
+    if (!unlockTarget.trim()) return;
+    setUnlocking(true);
+    try {
+      const isEmail = unlockTarget.includes("@");
+      const res = await apiFetch("/api/auth/unlock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(isEmail ? { email: unlockTarget.trim() } : { matricNo: unlockTarget.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        push(data.message ?? "Lockout cleared successfully.", "success");
+        setUnlockTarget("");
+      } else {
+        push(data.error ?? "Could not clear lockout.", "danger");
+      }
+    } finally {
+      setUnlocking(false);
+    }
+  }
 
   useEffect(() => {
     // See HANDOFF.md "Known gaps — Frontend data fetching" re: this lint rule.
@@ -126,6 +150,30 @@ export default function SettingsPage() {
                   onChange={(e) => setConfig({ ...config, loginLockoutMinutes: Number(e.target.value) })}
                   hint="Applies to both staff and student login attempts."
                 />
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Instant Account Unlock</CardTitle>
+              </CardHeader>
+              <CardBody className="flex flex-col gap-3">
+                <p className="text-[13px] text-[var(--color-ink-subtle)]">
+                  Instantly clear the 15-minute login rate-limit delay for any staff member, department admin, or student account.
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                  <div className="flex-1">
+                    <Input
+                      label="Account email or student matric number"
+                      placeholder="e.g. yungswag888@gmail.com or U23CYS1074"
+                      value={unlockTarget}
+                      onChange={(e) => setUnlockTarget(e.target.value)}
+                    />
+                  </div>
+                  <Button type="button" onClick={handleClearLockout} loading={unlocking} disabled={!unlockTarget.trim()}>
+                    Clear Lockout
+                  </Button>
+                </div>
               </CardBody>
             </Card>
 

@@ -47,7 +47,7 @@ export default function SuperAdminLoginPage() {
 
       push("Signed in as Super Admin.", "success");
       const basePath = typeof window !== "undefined" ? window.location.pathname.split("/")[1] : "superadmin";
-      router.push(`/${basePath}/departments`);
+      router.push(data.portalUrl ?? `/${basePath}/departments`);
     } catch {
       setError("Couldn't reach the server. Check your connection and try again.");
     } finally {
