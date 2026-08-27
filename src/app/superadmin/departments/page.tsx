@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { AppShell, PageHeader } from "@/components/ui/AppShell";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -65,6 +65,7 @@ const navItems = [
 export default function DepartmentsPage() {
   const { push } = useToast();
   const [departments, setDepartments] = useState<Department[] | null>(null);
+  const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [recycleBinOpen, setRecycleBinOpen] = useState(false);
   const [selectedDept, setSelectedDept] = useState<Department | null>(null);
@@ -72,7 +73,9 @@ export default function DepartmentsPage() {
   const [resetTarget, setResetTarget] = useState<DepartmentAdminSummary | null>(null);
   const [resetResult, setResetResult] = useState<{ email: string; temporaryPassword?: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Department | null>(null);
+  const [editDeptTarget, setEditDeptTarget] = useState<Department | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [unlockingAdminId, setUnlockingAdminId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await apiFetch("/api/departments");
@@ -94,6 +97,25 @@ export default function DepartmentsPage() {
       load();
     } else {
       push("Could not update this admin.", "danger");
+    }
+  }
+
+  async function unlockAdmin(admin: DepartmentAdminSummary) {
+    setUnlockingAdminId(admin.id);
+    try {
+      const res = await apiFetch("/api/auth/unlock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: admin.email }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        push(`Login lockout cleared for ${admin.fullName}.`, "success");
+      } else {
+        push(data.error ?? "Could not clear lockout.", "danger");
+      }
+    } finally {
+      setUnlockingAdminId(null);
     }
   }
 
@@ -134,63 +156,177 @@ export default function DepartmentsPage() {
     }
   }
 
+  const filteredDepts = useMemo(() => {
+    if (!departments) return [];
+    if (!search.trim()) return departments;
+    const q = search.toLowerCase().trim();
+    return departments.filter(
+      (d) => d.name.toLowerCase().includes(q) || d.code.toLowerCase().includes(q)
+    );
+  }, [departments, search]);
+
+  const stats = useMemo(() => {
+    if (!departments) return { totalDepts: 0, totalStudents: 0, totalStaff: 0, totalAdmins: 0 };
+    return {
+      totalDepts: departments.length,
+      totalStudents: departments.reduce((sum, d) => sum + d._count.students, 0),
+      totalStaff: departments.reduce((sum, d) => sum + d._count.teachers, 0),
+      totalAdmins: departments.reduce((sum, d) => sum + d.admins.length, 0),
+    };
+  }, [departments]);
+
   return (
     <AppShell navItems={navItems} orgLabel="Attend" userLabel="Super Admin">
       <PageHeader
-        title="Departments"
-        description={departments ? `${departments.length} active departments` : undefined}
+        title="Departments Directory"
+        description="Global academic departments, administrative leadership, and institutional records"
         actions={
-          <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => setRecycleBinOpen(true)}>
-              Recycle bin
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setRecycleBinOpen(true)}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
+                <path d="M3 6h18" />
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+              </svg>
+              Recycle Bin
             </Button>
-            <Button onClick={() => setCreateOpen(true)}>New department</Button>
+            <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
+                <path d="M5 12h14" />
+                <path d="M12 5v14" />
+              </svg>
+              New Department
+            </Button>
           </div>
         }
       />
 
-      <div className="px-4 py-5 md:px-6">
+      <div className="flex flex-col gap-5 px-4 py-5 md:px-8">
+        {/* Global Statistics Banner */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 shadow-sm">
+            <span className="text-[12px] font-medium text-[var(--color-ink-subtle)]">Active Departments</span>
+            <span className="mt-1 font-[var(--font-display)] text-[22px] font-bold text-[var(--color-ink)]">
+              {departments ? stats.totalDepts : "—"}
+            </span>
+          </div>
+
+          <div className="flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 shadow-sm">
+            <span className="text-[12px] font-medium text-[var(--color-ink-subtle)]">Enrolled Students</span>
+            <span className="mt-1 font-[var(--font-display)] text-[22px] font-bold text-[var(--color-accent-ink)]">
+              {departments ? stats.totalStudents : "—"}
+            </span>
+          </div>
+
+          <div className="flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 shadow-sm">
+            <span className="text-[12px] font-medium text-[var(--color-ink-subtle)]">Faculty Staff</span>
+            <span className="mt-1 font-[var(--font-display)] text-[22px] font-bold text-[var(--color-ink)]">
+              {departments ? stats.totalStaff : "—"}
+            </span>
+          </div>
+
+          <div className="flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 shadow-sm">
+            <span className="text-[12px] font-medium text-[var(--color-ink-subtle)]">Department Admins</span>
+            <span className="mt-1 font-[var(--font-display)] text-[22px] font-bold text-[var(--color-ink)]">
+              {departments ? stats.totalAdmins : "—"}
+            </span>
+          </div>
+        </div>
+
+        {/* Search Toolbar */}
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:w-80">
+            <input
+              type="text"
+              placeholder="Search department name or code..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white pl-8 pr-3 text-[13px] text-[var(--color-ink)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
+            />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="absolute left-2.5 top-2.5 text-[var(--color-ink-subtle)]"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+          </div>
+
+          {departments && (
+            <p className="text-[12.5px] text-[var(--color-ink-subtle)]">
+              Showing <span className="font-semibold text-[var(--color-ink)]">{filteredDepts.length}</span> of {departments.length} department{departments.length === 1 ? "" : "s"}
+            </p>
+          )}
+        </div>
+
+        {/* Departments Grid */}
         {departments === null ? (
-          <p className="py-10 text-center text-[13px] text-[var(--color-ink-subtle)]">Loading...</p>
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent" />
+            <p className="mt-3 text-[13px] text-[var(--color-ink-subtle)]">Loading departments...</p>
+          </div>
         ) : departments.length === 0 ? (
           <EmptyState
-            title="No departments yet"
-            description="Create your first department to generate its admin credentials."
-            action={<Button onClick={() => setCreateOpen(true)}>New department</Button>}
+            title="No departments registered"
+            description="Create your first academic department to generate administrator credentials."
+            action={
+              <Button size="sm" onClick={() => setCreateOpen(true)}>
+                New Department
+              </Button>
+            }
           />
+        ) : filteredDepts.length === 0 ? (
+          <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-8 text-center">
+            <p className="text-[14px] font-semibold text-[var(--color-ink)]">No matching departments</p>
+            <p className="mt-1 text-[12.5px] text-[var(--color-ink-subtle)]">
+              No department matches &quot;{search}&quot;.
+            </p>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {departments.map((d) => (
-              <Card key={d.id} className="flex flex-col justify-between">
-                <CardBody>
-                  <div>
-                    <p className="font-[var(--font-display)] text-[15px] font-bold text-[var(--color-ink)]">
-                      {d.name}
-                    </p>
-                    <p className="mt-0.5 font-[var(--font-mono)] text-[12px] text-[var(--color-ink-subtle)]">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredDepts.map((d: Department) => (
+              <Card key={d.id} className="flex flex-col justify-between hover:shadow-md transition-shadow">
+                <CardBody className="p-5">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="rounded bg-[var(--color-accent-subtle)] px-2.5 py-1 font-[var(--font-mono)] text-[12.5px] font-bold text-[var(--color-accent-ink)]">
                       {d.code}
-                    </p>
+                    </span>
                   </div>
 
-                  <div className="mt-3 flex gap-4 text-[12.5px] text-[var(--color-ink-muted)]">
-                    <span className="font-medium">{d._count.students} students</span>
-                    <span className="font-medium">{d._count.teachers} staff</span>
+                  <h3 className="mt-2.5 font-[var(--font-display)] text-[17px] font-bold leading-snug text-[var(--color-ink)]">
+                    {d.name}
+                  </h3>
+
+                  <div className="mt-3.5 flex items-center gap-4 border-t border-[var(--color-border)]/60 pt-3 text-[12.5px] text-[var(--color-ink-muted)]">
+                    <span><strong>{d._count.students}</strong> students</span>
+                    <span><strong>{d._count.teachers}</strong> faculty staff</span>
                   </div>
 
                   {d.admins.length > 0 && (
-                    <div className="mt-3 flex flex-col gap-2 border-t border-[var(--color-border)] pt-3">
-                      <p className="text-[11.5px] font-semibold text-[var(--color-ink-subtle)] uppercase tracking-wider">
-                        Admins
-                      </p>
-                      {d.admins.map((admin) => (
-                        <div key={admin.id} className="flex items-center justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="truncate text-[12.5px] font-medium text-[var(--color-ink)]">{admin.fullName}</p>
-                            <div className="mt-0.5">
+                    <div className="mt-3 flex flex-col gap-2 border-t border-[var(--color-border)]/60 pt-3">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-ink-subtle)]">
+                        Department Administrators
+                      </span>
+                      {d.admins.map((admin: DepartmentAdminSummary) => (
+                        <div key={admin.id} className="flex flex-col gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-surface-subtle)]/70 p-2.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="truncate text-[13px] font-semibold text-[var(--color-ink)]">{admin.fullName}</p>
+                              <p className="truncate text-[11.5px] text-[var(--color-ink-subtle)]">{admin.email}</p>
+                            </div>
+                            <div>
                               {!admin.active ? (
                                 <Badge tone="danger">Deactivated</Badge>
                               ) : admin.mustChangePassword ? (
-                                <Badge tone="warning">Setup pending</Badge>
+                                <Badge tone="warning">Setup Pending</Badge>
                               ) : (
                                 <Badge tone="success" dot>
                                   Active
@@ -198,15 +334,31 @@ export default function DepartmentsPage() {
                               )}
                             </div>
                           </div>
-                          <div className="flex shrink-0 gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => setResetTarget(admin)}>
-                              Reset
+
+                          <div className="flex flex-wrap items-center justify-end gap-1 border-t border-[var(--color-border)]/40 pt-1.5">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => unlockAdmin(admin)}
+                              loading={unlockingAdminId === admin.id}
+                              className="text-[11.5px] h-7 px-2"
+                              title="Clear 15-minute login lockout delay"
+                            >
+                              Clear Lockout
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setResetTarget(admin)}
+                              className="text-[11.5px] h-7 px-2"
+                            >
+                              Reset Pass
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => toggleAdminActive(admin)}
-                              className={admin.active ? "text-[var(--color-danger)]" : ""}
+                              className={`text-[11.5px] h-7 px-2 ${admin.active ? "text-[var(--color-danger)]" : ""}`}
                             >
                               {admin.active ? "Deactivate" : "Reactivate"}
                             </Button>
@@ -217,18 +369,28 @@ export default function DepartmentsPage() {
                   )}
                 </CardBody>
 
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--color-border)] px-4 py-3 bg-[var(--color-surface-subtle)]/50">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--color-border)] bg-[var(--color-surface-subtle)]/50 px-4 py-3">
                   <Button variant="secondary" size="sm" onClick={() => setSelectedDept(d)}>
-                    Manage roster &amp; staff &rarr;
+                    Open Department Hub &rarr;
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeleteTarget(d)}
-                    className="text-[var(--color-danger)] hover:bg-[var(--color-danger-subtle)]"
-                  >
-                    Delete
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditDeptTarget(d)}
+                      className="text-[12.5px]"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDeleteTarget(d)}
+                      className="text-[var(--color-danger)] hover:bg-[var(--color-danger-subtle)] text-[12.5px]"
+                    >
+                      Archive
+                    </Button>
+                  </div>
                 </div>
               </Card>
             ))}
@@ -244,6 +406,13 @@ export default function DepartmentsPage() {
           setCreated(result);
           load();
         }}
+      />
+
+      <EditDepartmentModal
+        dept={editDeptTarget}
+        open={!!editDeptTarget}
+        onClose={() => setEditDeptTarget(null)}
+        onUpdated={() => load()}
       />
 
       <DepartmentRecycleBinModal
@@ -380,6 +549,94 @@ export default function DepartmentsPage() {
   );
 }
 
+function EditDepartmentModal({
+  dept,
+  open,
+  onClose,
+  onUpdated,
+}: {
+  dept: Department | null;
+  open: boolean;
+  onClose: () => void;
+  onUpdated: () => void;
+}) {
+  const { push } = useToast();
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (dept) {
+      setName(dept.name);
+      setCode(dept.code);
+    }
+  }, [dept]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!dept || !name.trim() || !code.trim()) return;
+    setLoading(true);
+    try {
+      const res = await apiFetch(`/api/departments/${dept.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          code: code.trim().toUpperCase(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        push("Department details updated successfully.", "success");
+        onUpdated();
+        onClose();
+      } else {
+        push(data.error ?? "Could not update department.", "danger");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Edit Academic Department"
+      description="Update the formal name or short code of this department."
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} loading={loading} disabled={!name.trim() || !code.trim()}>
+            Save Changes
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+        <Input
+          label="Department Name *"
+          placeholder="e.g. Cyber Security Science"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          autoFocus
+        />
+        <Input
+          label="Department Code *"
+          placeholder="e.g. CYS"
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          hint="Short code used in student matric prefixes and course codes."
+          required
+        />
+      </form>
+    </Modal>
+  );
+}
+
 function DepartmentDetailsModal({
   dept,
   open,
@@ -411,6 +668,11 @@ function DepartmentDetailsModal({
   const [addLevelOpen, setAddLevelOpen] = useState(false);
   const [editLevelTarget, setEditLevelTarget] = useState<LevelSummary | null>(null);
   const [promoteLevelTarget, setPromoteLevelTarget] = useState<LevelSummary | null>(null);
+  const [deleteLevelTarget, setDeleteLevelTarget] = useState<LevelSummary | null>(null);
+  const [editDeptOpen, setEditDeptOpen] = useState(false);
+
+  // Recycle bin modal
+  const [binOpen, setBinOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -517,7 +779,14 @@ function DepartmentDetailsModal({
         onClose={onClose}
         title={`${dept.name} (${dept.code})`}
         description="Department Administration & Roster Management"
-        footer={<Button onClick={onClose}>Close</Button>}
+        footer={
+          <div className="flex w-full items-center justify-between">
+            <Button variant="secondary" size="sm" onClick={() => setEditDeptOpen(true)}>
+              Edit Department Info
+            </Button>
+            <Button onClick={onClose}>Close</Button>
+          </div>
+        }
       >
         <div className="flex flex-col gap-4">
           {/* Tab switcher */}
@@ -878,6 +1147,17 @@ function DepartmentDetailsModal({
           </div>
         )}
       </Modal>
+
+      {/* Edit Department Modal */}
+      <EditDepartmentModal
+        dept={dept}
+        open={editDeptOpen}
+        onClose={() => setEditDeptOpen(false)}
+        onUpdated={() => {
+          loadData();
+          onChanged();
+        }}
+      />
     </>
   );
 }

@@ -12,11 +12,21 @@ interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   size?: "sm" | "md" | "lg";
+  container?: HTMLElement | null;
 }
 
 const sizeClasses = { sm: "max-w-sm", md: "max-w-md", lg: "max-w-lg sm:max-w-xl" };
 
-export function Modal({ open, onClose, title, description, children, footer, size = "md" }: ModalProps) {
+export function Modal({
+  open,
+  onClose,
+  title,
+  description,
+  children,
+  footer,
+  size = "md",
+  container,
+}: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -33,10 +43,12 @@ export function Modal({ open, onClose, title, description, children, footer, siz
 
   if (!open || typeof document === "undefined") return null;
 
+  const targetContainer = container || (document.fullscreenElement as HTMLElement) || document.body;
+
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
       <div
-        className="fixed inset-0 bg-[var(--color-ink)]/50 backdrop-blur-xs animate-[fadeIn_120ms_ease-out]"
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs animate-[fadeIn_120ms_ease-out]"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -47,7 +59,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
         aria-labelledby="modal-title"
         tabIndex={-1}
         className={cn(
-          "relative my-auto w-full max-h-[92vh] flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white shadow-xl",
+          "relative my-auto w-full max-h-[92vh] flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white text-[var(--color-ink)] shadow-2xl",
           "animate-[slideUp_150ms_ease-out] focus:outline-none",
           sizeClasses[size]
         )}
@@ -75,7 +87,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
             </button>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">{children}</div>
+        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5 text-[var(--color-ink)]">{children}</div>
         {footer && (
           <div className="shrink-0 flex flex-wrap justify-end gap-2 border-t border-[var(--color-border)] px-4 py-3 sm:px-5 sm:py-3.5 bg-[var(--color-surface-subtle)]/40 rounded-b-[var(--radius-lg)]">
             {footer}
@@ -83,6 +95,6 @@ export function Modal({ open, onClose, title, description, children, footer, siz
         )}
       </div>
     </div>,
-    document.body
+    targetContainer
   );
 }

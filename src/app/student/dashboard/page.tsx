@@ -478,6 +478,7 @@ export default function StudentDashboardPage() {
         onClose={closeScannerModal}
         title="Scan Attendance QR"
         description="Position your phone camera towards the live lecture code."
+        size="lg"
         footer={
           <div className="flex w-full items-center justify-between gap-2">
             <Button variant="secondary" onClick={closeScannerModal}>
@@ -528,25 +529,30 @@ export default function StudentDashboardPage() {
           )}
 
           {scanState === "scanning" && (
-            <div className="relative aspect-square w-full max-w-[320px] overflow-hidden rounded-[var(--radius-lg)] bg-black shadow-lg">
+            <div className="relative h-[320px] sm:h-[360px] w-full overflow-hidden rounded-[var(--radius-lg)] bg-black shadow-xl">
               <video
                 ref={videoRef}
                 playsInline
                 muted
                 className="size-full object-cover"
               />
-              {/* Viewfinder Target Frame */}
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="relative size-48 rounded-lg border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]">
+              {/* Viewfinder Target Frame with wider dimensions & scanning beam */}
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
+                <div className="relative h-[78%] w-[88%] max-w-[340px] rounded-2xl border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]">
                   {/* Corner accents */}
-                  <div className="absolute -left-1 -top-1 size-4 border-l-4 border-t-4 border-[var(--color-accent)]" />
-                  <div className="absolute -right-1 -top-1 size-4 border-r-4 border-t-4 border-[var(--color-accent)]" />
-                  <div className="absolute -bottom-1 -left-1 size-4 border-b-4 border-l-4 border-[var(--color-accent)]" />
-                  <div className="absolute -bottom-1 -right-1 size-4 border-b-4 border-r-4 border-[var(--color-accent)]" />
+                  <div className="absolute -left-1.5 -top-1.5 size-6 rounded-tl-lg border-l-4 border-t-4 border-[var(--color-accent)]" />
+                  <div className="absolute -right-1.5 -top-1.5 size-6 rounded-tr-lg border-r-4 border-t-4 border-[var(--color-accent)]" />
+                  <div className="absolute -bottom-1.5 -left-1.5 size-6 rounded-bl-lg border-b-4 border-l-4 border-[var(--color-accent)]" />
+                  <div className="absolute -bottom-1.5 -right-1.5 size-6 rounded-br-lg border-b-4 border-r-4 border-[var(--color-accent)]" />
+
+                  {/* Animated laser scan line */}
+                  <div className="absolute left-2 right-2 top-0 h-0.5 bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-80 animate-[pulse_2s_infinite]" />
                 </div>
               </div>
-              <div className="absolute bottom-2 left-0 right-0 text-center text-[12px] font-medium text-white/90">
-                Point at lecturer&apos;s QR code
+              <div className="absolute bottom-3 left-0 right-0 text-center">
+                <span className="rounded-full bg-black/65 px-3.5 py-1 text-[12px] font-medium text-white shadow-xs backdrop-blur-xs">
+                  Align lecturer&apos;s QR code inside the frame
+                </span>
               </div>
             </div>
           )}

@@ -209,12 +209,12 @@ export default function LiveSessionPage({ params }: { params: Promise<{ id: stri
   if (view === "ended") {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center bg-[var(--color-surface-subtle)] px-4 py-8 text-center">
-        <div className="w-full max-w-md rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-8 shadow-sm">
+        <div className="w-full max-w-md rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-6 sm:p-8 shadow-sm">
           <Badge tone="neutral" className="mx-auto text-[13px] px-3 py-1">
             Session Completed
           </Badge>
           <h2 className="mt-3 font-[var(--font-display)] text-[22px] font-bold text-[var(--color-ink)]">
-            {courseCode} Attendance Recorded
+            {courseCode || "Class"} Attendance Recorded
           </h2>
           <p className="mt-1 text-[13.5px] text-[var(--color-ink-subtle)]">{courseName}</p>
 
@@ -222,7 +222,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ id: stri
             <div>
               <span className="text-[11.5px] font-medium text-[var(--color-ink-subtle)]">Total Checked In</span>
               <p className="font-[var(--font-display)] text-[20px] font-bold text-[var(--color-success-ink)]">
-                {checkedIn} students
+                {checkedIn} student{checkedIn === 1 ? "" : "s"}
               </p>
             </div>
             <div>
@@ -234,6 +234,13 @@ export default function LiveSessionPage({ params }: { params: Promise<{ id: stri
           </div>
 
           <div className="flex flex-col gap-2.5">
+            <Button
+              variant="secondary"
+              onClick={() => setManualOpen(true)}
+              className="w-full text-[var(--color-accent-ink)]"
+            >
+              + Mark Student Present Manually
+            </Button>
             <a href={`/api/sessions/${sessionId}/export`} download className="w-full">
               <Button className="w-full shadow-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
@@ -249,6 +256,42 @@ export default function LiveSessionPage({ params }: { params: Promise<{ id: stri
             </Button>
           </div>
         </div>
+
+        {/* Manual Check-in Modal for Ended State */}
+        <Modal
+          open={manualOpen}
+          onClose={() => setManualOpen(false)}
+          title="Manual Attendance Check-in"
+          description="Mark a student present even after the live session has ended."
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setManualOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={submitManualCheckin} loading={manualLoading}>
+                Confirm Attendance
+              </Button>
+            </>
+          }
+        >
+          <form onSubmit={submitManualCheckin} className="flex flex-col gap-3.5 text-left">
+            <Input
+              label="Student Matric Number *"
+              placeholder="e.g. U23CYS1074"
+              value={manualMatric}
+              onChange={(e) => setManualMatric(e.target.value.toUpperCase())}
+              required
+              autoFocus
+            />
+            <Input
+              label="Reason for Manual Check-in *"
+              placeholder="e.g. Student attended lecture, manual confirmation"
+              value={manualReason}
+              onChange={(e) => setManualReason(e.target.value)}
+              required
+            />
+          </form>
+        </Modal>
       </div>
     );
   }
@@ -411,6 +454,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ id: stri
         onClose={() => setManualOpen(false)}
         title="Manual Attendance Check-in"
         description="Mark a student present if their camera or smartphone is unavailable."
+        container={containerRef.current}
         footer={
           <>
             <Button variant="secondary" onClick={() => setManualOpen(false)}>
@@ -447,6 +491,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ id: stri
         onClose={() => setEndConfirmOpen(false)}
         title="End Lecture Session?"
         description="This will lock the attendance session and freeze further check-ins."
+        container={containerRef.current}
         footer={
           <>
             <Button variant="secondary" onClick={() => setEndConfirmOpen(false)}>

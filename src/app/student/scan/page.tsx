@@ -151,12 +151,13 @@ export default function ScanPage() {
         {state === "scanning" && (
           <>
             <video ref={videoRef} className="absolute inset-0 size-full object-cover" playsInline muted />
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="relative size-64 rounded-[var(--radius-lg)] border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]">
-                <div className="absolute -left-1 -top-1 size-4 border-l-4 border-t-4 border-[var(--color-accent)]" />
-                <div className="absolute -right-1 -top-1 size-4 border-r-4 border-t-4 border-[var(--color-accent)]" />
-                <div className="absolute -bottom-1 -left-1 size-4 border-b-4 border-l-4 border-[var(--color-accent)]" />
-                <div className="absolute -bottom-1 -right-1 size-4 border-b-4 border-r-4 border-[var(--color-accent)]" />
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
+              <div className="relative h-[65%] w-[88%] max-w-[360px] rounded-2xl border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]">
+                <div className="absolute -left-1.5 -top-1.5 size-7 rounded-tl-lg border-l-4 border-t-4 border-[var(--color-accent)]" />
+                <div className="absolute -right-1.5 -top-1.5 size-7 rounded-tr-lg border-r-4 border-t-4 border-[var(--color-accent)]" />
+                <div className="absolute -bottom-1.5 -left-1.5 size-7 rounded-bl-lg border-b-4 border-l-4 border-[var(--color-accent)]" />
+                <div className="absolute -bottom-1.5 -right-1.5 size-7 rounded-br-lg border-b-4 border-r-4 border-[var(--color-accent)]" />
+                <div className="absolute left-2 right-2 top-0 h-0.5 bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent opacity-80 animate-[pulse_2s_infinite]" />
               </div>
             </div>
             <div className="absolute bottom-10 z-10 flex flex-col items-center gap-2">

@@ -4,6 +4,62 @@ import { requireSession, UnauthorizedError, ForbiddenError } from "@/lib/auth/gu
 import { writeAuditLog } from "@/lib/auth/audit";
 import type { Prisma } from "@prisma/client";
 
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const claims = await requireSession(req, ["SUPER_ADMIN"]);
+    const { id } = await params;
+    const body = await req.json();
+
+    const name = typeof body.name === "string" ? body.name.trim() : undefined;
+    const code = typeof body.code === "string" ? body.code.trim().toUpperCase() : undefined;
+
+    if (!name && !code) {
+      return NextResponse.json({ error: "At least one field (name or code) is required" }, { status: 400 });
+    }
+
+    const existing = await db.department.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: "Department not found" }, { status: 404 });
+    }
+
+    if (code && code !== existing.code) {
+      const duplicate = await db.department.findUnique({ where: { code } });
+      if (duplicate && duplicate.id !== id) {
+        return NextResponse.json({ error: `Department code '${code}' is already in use` }, { status: 409 });
+      }
+    }
+
+    const updated = await db.department.update({
+      where: { id },
+      data: {
+        ...(name ? { name } : {}),
+        ...(code ? { code } : {}),
+      },
+    });
+
+    await writeAuditLog({
+      actorRole: "SUPER_ADMIN",
+      actorId: claims.sub,
+      action: "department.updated",
+      targetType: "Department",
+      targetId: id,
+      metadata: {
+        previous: { name: existing.name, code: existing.code },
+        updated: { name: updated.name, code: updated.code },
+      },
+    });
+
+    return NextResponse.json(updated);
+  } catch (err) {
+    if (err instanceof UnauthorizedError) return NextResponse.json({ error: err.message }, { status: 401 });
+    if (err instanceof ForbiddenError) return NextResponse.json({ error: err.message }, { status: 403 });
+    throw err;
+  }
+}
+
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
